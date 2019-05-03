@@ -1,0 +1,8 @@
+[package]
+name = "tracing_facade"
+version = "0.1.0"
+authors = ["Josh Gao <josh@jmgao.dev>"]
+edition = "2018"
+
+[dependencies]
+scopeguard = "1.0"
