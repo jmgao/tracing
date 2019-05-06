@@ -8,7 +8,18 @@ macro_rules! trace_begin {
       let event = $crate::Event {
         name: $name.into(),
         kind: $crate::EventKind::SyncBegin,
-        metadata: $crate::Metadata {},
+        metadata: $crate::Metadata::default(),
+      };
+      $crate::record_event(event);
+    }
+  };
+
+  ($name: expr, $($metadata: tt)+) => {
+    if $crate::is_enabled() {
+      let event = $crate::Event {
+        name: $name.into(),
+        kind: $crate::EventKind::SyncBegin,
+        metadata: $crate::Metadata::from_json(serde_json::json!({$($metadata)+})),
       };
       $crate::record_event(event);
     }
@@ -22,7 +33,18 @@ macro_rules! trace_end {
       let event = $crate::Event {
         name: $name.into(),
         kind: $crate::EventKind::SyncEnd,
-        metadata: $crate::Metadata {},
+        metadata: $crate::Metadata::default(),
+      };
+      $crate::record_event(event);
+    }
+  };
+
+  ($name: expr, $($metadata: tt)+) => {
+    if $crate::is_enabled() {
+      let event = $crate::Event {
+        name: $name.into(),
+        kind: $crate::EventKind::SyncEnd,
+        metadata: $crate::Metadata::from_json(serde_json::json!({$($metadata)+})),
       };
       $crate::record_event(event);
     }
@@ -34,9 +56,21 @@ macro_rules! trace_scoped {
   ($name: expr) => {
     let guard = if $crate::is_enabled() {
       let name: std::borrow::Cow<str> = $name.into();
-      trace_begin!(name.clone());
+      $crate::trace_begin!(name.clone());
       Some($crate::guard(name, move |name| {
-        trace_end!(name);
+        $crate::trace_end!(name);
+      }))
+    } else {
+      None
+    };
+  };
+
+  ($name: expr, $($metadata: tt)+) => {
+    let guard = if $crate::is_enabled() {
+      let name: std::borrow::Cow<str> = $name.into();
+      $crate::trace_begin!(name.clone(), $($metadata)+);
+      Some($crate::guard(name, move |name| {
+        $crate::trace_end!(name);
       }))
     } else {
       None

@@ -7,6 +7,9 @@
 //! #[macro_use]
 //! extern crate tracing_facade;
 //!
+//! #[macro_use]
+//! extern crate serde_json;
+//!
 //! use std::borrow::Cow;
 //! use std::sync::{Arc, Mutex};
 //!
@@ -14,13 +17,15 @@
 //! struct Event {
 //!   name: String,
 //!   kind: tracing_facade::EventKind,
+//!   metadata: tracing_facade::Metadata,
 //! }
 //!
 //! impl<'a> From<tracing_facade::Event<'a>> for Event {
 //!   fn from(event: tracing_facade::Event) -> Self {
 //!     Event {
 //!       name: event.name.into_owned(),
-//!       kind: event.kind
+//!       kind: event.kind,
+//!       metadata: event.metadata,
 //!     }
 //!   }
 //! }
@@ -51,7 +56,7 @@
 //! fn main() {
 //!   let (tracer, tracer_events) = Tracer::new();
 //!   tracing_facade::set_boxed_tracer(Box::new(tracer));
-//!   trace_begin!("foo");
+//!   trace_begin!("foo", "value": 42);
 //!   {
 //!     trace_scoped!("bar");
 //!   }
@@ -61,6 +66,7 @@
 //!   assert_eq!(events.len(), 4);
 //!   assert_eq!(events[0].name, "foo");
 //!   assert_eq!(events[0].kind, tracing_facade::EventKind::SyncBegin);
+//!   assert_eq!(events[0].metadata.as_json().unwrap(), &json!({"value": 42}));
 //!
 //!   assert_eq!(events[1].name, "bar");
 //!   assert_eq!(events[1].kind, tracing_facade::EventKind::SyncBegin);
@@ -98,7 +104,30 @@ pub struct Event<'a> {
   pub metadata: Metadata,
 }
 
-pub struct Metadata {}
+#[derive(Clone, Debug)]
+pub struct Metadata {
+  json: Option<serde_json::Value>,
+}
+
+impl Metadata {
+  pub fn as_json(&self) -> Option<&serde_json::Value> {
+    self.json.as_ref()
+  }
+
+  pub fn into_json(self) -> Option<serde_json::Value> {
+    self.json
+  }
+
+  pub fn from_json(json: serde_json::Value) -> Metadata {
+    Metadata { json: Some(json) }
+  }
+}
+
+impl Default for Metadata {
+  fn default() -> Self {
+    Metadata { json: None }
+  }
+}
 
 pub fn is_enabled() -> bool {
   loop {

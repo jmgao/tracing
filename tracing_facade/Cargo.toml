@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 scopeguard = "1.0"
+serde_json = "1.0"

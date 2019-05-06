@@ -38,6 +38,7 @@ struct Record<'a> {
   pid: u32,
   tid: u32,
   ts: u64,
+  arg: Option<serde_json::Value>,
 }
 
 fn write_event(mut output: &mut std::io::Write, event: Event) {
@@ -53,6 +54,7 @@ fn write_event(mut output: &mut std::io::Write, event: Event) {
     pid: std::process::id(),
     tid: gettid::gettid() as u32,
     ts: now,
+    arg: event.metadata.into_json(),
   };
 
   // Ignore errors.
