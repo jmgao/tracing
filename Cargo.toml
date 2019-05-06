@@ -1,4 +1,5 @@
 [workspace]
 members = [
   "tracing_facade",
+  "tracing_chromium",
 ]
