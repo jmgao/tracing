@@ -1,3 +1,6 @@
+#[doc(hidden)]
+pub use scopeguard::guard;
+
 #[macro_export]
 macro_rules! trace_begin {
   ($name: expr) => {
@@ -31,26 +34,12 @@ macro_rules! trace_scoped {
   ($name: expr) => {
     let guard = if $crate::is_enabled() {
       let name: std::borrow::Cow<str> = $name.into();
-      let event = $crate::Event {
-        name: name.clone(),
-        kind: $crate::EventKind::SyncBegin,
-        metadata: $crate::Metadata {},
-      };
-      $crate::record_event(event);
-
-      Some($crate::guard(name, |name| {
-        let event = $crate::Event {
-          name,
-          kind: $crate::EventKind::SyncEnd,
-          metadata: $crate::Metadata {},
-        };
-        $crate::record_event(event);
+      trace_begin!(name.clone());
+      Some($crate::guard(name, move |name| {
+        trace_end!(name);
       }))
     } else {
       None
     };
   };
 }
-
-#[doc(hidden)]
-pub use scopeguard::guard;
