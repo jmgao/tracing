@@ -88,6 +88,10 @@ pub use macros::*;
 pub enum Error {}
 
 pub trait Tracer: Sync + Send {
+  fn is_enabled(&self) -> bool {
+    true
+  }
+
   fn record_event(&self, event: Event);
   fn flush(&self);
 }
@@ -134,7 +138,7 @@ pub fn is_enabled() -> bool {
     match STATE.load(Ordering::Acquire) {
       UNINITIALIZED => return false,
       INITIALIZING => std::thread::yield_now(),
-      INITIALIZED => return true,
+      INITIALIZED => return get_tracer_assume_initialized().is_enabled(),
       other => panic!("unexpected tracing_facade::STATE value: {}", other),
     }
   }
