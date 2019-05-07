@@ -27,6 +27,7 @@ impl tracing_facade::Tracer for Tracer {
 }
 
 impl Tracer {
+  /// Constructs a [Tracer] that writes to specified output.
   pub fn from_output(mut output: Box<std::io::Write + Send>) -> Tracer {
     let _ = output.write_all(b"[");
     Tracer {

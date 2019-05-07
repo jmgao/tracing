@@ -2,6 +2,9 @@
 //!
 //! This crate provides a pluggable API for tracing, akin to what [log] does for logging.
 //!
+//! Some available implementations are:
+//!  * [tracing_chromium] - to emit Chromium's trace event format
+//!
 //! ### Example
 //! ```
 //! #[macro_use]
@@ -94,31 +97,59 @@ pub use macros::*;
 
 pub enum Error {}
 
+/// A trait encompassing the operations required for tracing.
 pub trait Tracer: Sync + Send {
+  /// Determines whether the [Tracer] is enabled.
+  ///
+  /// The trace macros use this to avoid doing work when unneeded.
   fn is_enabled(&self) -> bool {
     true
   }
 
+  /// Specifies whether the [Tracer] can handle additional metadata.
+  ///
+  /// The trace macros use this to avoid constructing a [Metadata] object which will get immediately
+  /// thrown away.
   fn supports_metadata(&self) -> bool {
     false
   }
 
+  /// Record an [Event] to the Tracer.
   fn record_event(&self, event: Event);
+
+  /// Flush any previously recorded [Event]s to the Tracer.
   fn flush(&self);
 }
 
+/// An enum representing the types of [Event]s that can occur.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum EventKind {
+  /// The beginning of a synchronous duration.
+  ///
+  /// This represents the beginning of a duration on a particular thread. Durations can be nested,
+  /// but must not overlap.
   SyncBegin,
+
+  /// The end of a synchronous duration.
+  ///
+  /// This represents the end of a duration on a particular thread. Durations can be nested,
+  /// but must not overlap.
   SyncEnd,
 }
 
+/// An event to trace.
 pub struct Event<'a> {
+  /// The name of the [Event].
   pub name: Cow<'a, str>,
+
+  /// The type of [Event] which occurred.
   pub kind: EventKind,
+
+  /// [Metadata] attached to the event.
   pub metadata: Metadata,
 }
 
+/// A struct containing metadata for an event.
 #[derive(Clone, Debug)]
 pub struct Metadata {
   json: Option<serde_json::Value>,
@@ -144,6 +175,10 @@ impl Default for Metadata {
   }
 }
 
+/// Determines whether a [Tracer] has been installed, and if it is currently enabled.
+///
+/// If a [Tracer] has been installed, returns the result of [Tracer::is_enabled].
+/// Otherwise, returns false.
 pub fn is_enabled() -> bool {
   loop {
     match STATE.load(Ordering::Acquire) {
@@ -155,6 +190,10 @@ pub fn is_enabled() -> bool {
   }
 }
 
+/// Determines whether a [Tracer] has been installed, and if it supports metadata.
+///
+/// If a [Tracer] has been installed, returns the result of [Tracer::supports_metadata].
+/// Otherwise, returns false.
 pub fn supports_metadata() -> bool {
   if is_enabled() {
     get_tracer_assume_initialized().supports_metadata()
@@ -163,12 +202,20 @@ pub fn supports_metadata() -> bool {
   }
 }
 
+/// Records an Event to the installed [Tracer].
+///
+/// If a [Tracer] has been installed, invokes [Tracer::record_event] on it.
+/// Otherwise, does nothing.
 pub fn record_event(event: Event) {
   if is_enabled() {
     get_tracer_assume_initialized().record_event(event)
   }
 }
 
+/// Flushes the installed [Tracer].
+///
+/// If a [Tracer] has been installed, invokes [Tracer::flush] on it.
+/// Otherwise, does nothing.
 pub fn flush() {
   if is_enabled() {
     get_tracer_assume_initialized().flush()
@@ -192,10 +239,17 @@ fn get_tracer_assume_initialized() -> &'static Tracer {
   unsafe { TRACER.unwrap() }
 }
 
+/// Installs a [Tracer].
+///
+/// Installation can only occur once; subsequent installations will panic.
 pub fn set_tracer(tracer: &'static Tracer) {
   set_tracer_impl(tracer);
 }
 
+/// Installs a [Tracer] contained in a [Box].
+///
+/// The contained [Tracer] will never be destroyed.
+/// Installation can only occur once; subsequent installations will panic.
 pub fn set_boxed_tracer(tracer: Box<Tracer>) {
   let raw = Box::into_raw(tracer);
   set_tracer_impl(unsafe { &*raw });
