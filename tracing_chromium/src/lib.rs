@@ -12,6 +12,10 @@ pub struct Tracer {
 }
 
 impl tracing_facade::Tracer for Tracer {
+  fn supports_metadata(&self) -> bool {
+    true
+  }
+
   fn record_event(&self, event: Event) {
     let mut lock = self.output.lock().unwrap();
     write_event(lock.deref_mut(), event);

@@ -46,6 +46,10 @@
 //!
 //!
 //! impl tracing_facade::Tracer for Tracer {
+//!   fn supports_metadata(&self) -> bool {
+//!     true
+//!   }
+//!
 //!   fn record_event(&self, event: tracing_facade::Event) {
 //!     self.events.lock().unwrap().push(event.into());
 //!   }
@@ -56,26 +60,29 @@
 //! fn main() {
 //!   let (tracer, tracer_events) = Tracer::new();
 //!   tracing_facade::set_boxed_tracer(Box::new(tracer));
-//!   trace_begin!("foo", "value": 42);
 //!   {
-//!     trace_scoped!("bar");
+//!     trace_scoped!("foo");
+//!     trace_begin!("bar", "value": 42);
+//!     trace_end!("bar");
 //!   }
-//!   trace_end!("foo");
 //!
 //!   let events = tracer_events.lock().unwrap().clone();
 //!   assert_eq!(events.len(), 4);
 //!   assert_eq!(events[0].name, "foo");
 //!   assert_eq!(events[0].kind, tracing_facade::EventKind::SyncBegin);
-//!   assert_eq!(events[0].metadata.as_json().unwrap(), &json!({"value": 42}));
+//!   assert_eq!(events[0].metadata.as_json(), None);
 //!
 //!   assert_eq!(events[1].name, "bar");
 //!   assert_eq!(events[1].kind, tracing_facade::EventKind::SyncBegin);
+//!   assert_eq!(events[1].metadata.as_json(), Some(&json!({"value": 42})));
 //!
 //!   assert_eq!(events[2].name, "bar");
 //!   assert_eq!(events[2].kind, tracing_facade::EventKind::SyncEnd);
+//!   assert_eq!(events[2].metadata.as_json(), None);
 //!
 //!   assert_eq!(events[3].name, "foo");
 //!   assert_eq!(events[3].kind, tracing_facade::EventKind::SyncEnd);
+//!   assert_eq!(events[3].metadata.as_json(), None);
 //! }
 //! ```
 
@@ -90,6 +97,10 @@ pub enum Error {}
 pub trait Tracer: Sync + Send {
   fn is_enabled(&self) -> bool {
     true
+  }
+
+  fn supports_metadata(&self) -> bool {
+    false
   }
 
   fn record_event(&self, event: Event);
@@ -141,6 +152,14 @@ pub fn is_enabled() -> bool {
       INITIALIZED => return get_tracer_assume_initialized().is_enabled(),
       other => panic!("unexpected tracing_facade::STATE value: {}", other),
     }
+  }
+}
+
+pub fn supports_metadata() -> bool {
+  if is_enabled() {
+    get_tracer_assume_initialized().supports_metadata()
+  } else {
+    false
   }
 }
 
