@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: jmgao/ubuntu-cosmic-mingw-w64-rust:latest
+    steps:
+      - checkout
+      - run:
+          name: Build
+          command: cargo build
+      - run:
+          name: Test
+          command: cargo test
+      - run:
+          name: Clippy
+          command: cargo clippy
