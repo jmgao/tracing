@@ -2,7 +2,7 @@ tracing_facade
 ========
 A facade that aims to do for tracing what `log` does for logging.
 
-[![CircleCI](https://circleci.com/gh/jmgao/tracing_facade.svg?style=svg)](https://circleci.com/gh/jmgao/tracing_facade)
+[![CircleCI](https://circleci.com/gh/jmgao/tracing.svg?style=svg)](https://circleci.com/gh/jmgao/tracing)
 
 ### License
 
