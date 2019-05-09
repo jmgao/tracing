@@ -4,6 +4,17 @@ version = "0.1.0"
 authors = ["Josh Gao <josh@jmgao.dev>"]
 edition = "2018"
 
+description = "Chromium tracing implementation for tracing_facade"
+homepage = "https://github.com/jmgao/tracing"
+documentation = "https://docs.rs/tracing_chromium"
+repository = "https://github.com/jmgao/tracing"
+keywords = ["tracing"]
+license = "0BSD"
+
+[badges]
+circle-ci = { repository = "jmgao/tracing" }
+maintenance = { status = "actively-developed" }
+
 [dependencies]
 tracing_facade = { path = "../tracing_facade", version = "0.1" }
 
